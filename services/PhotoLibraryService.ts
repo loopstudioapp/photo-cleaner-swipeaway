@@ -1,5 +1,6 @@
 import * as MediaLibrary from 'expo-media-library';
 import { PhotoAsset, MonthGroup } from '@/models/PhotoAsset';
+import { logger } from '@/utils/logger';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -19,14 +20,14 @@ class PhotoLibraryService {
   async requestPermission(): Promise<boolean> {
     // Request read permission with full access (not writeOnly)
     const { status, accessPrivileges } = await MediaLibrary.requestPermissionsAsync(false);
-    console.log('[PhotoLibraryService] Permission status:', status, 'accessPrivileges:', accessPrivileges);
+    logger.log('[PhotoLibraryService] Permission status:', status, 'accessPrivileges:', accessPrivileges);
     // Return true only if we have full access to all photos
     return status === 'granted' && accessPrivileges === 'all';
   }
 
   async checkPermission(): Promise<boolean> {
     const { status, accessPrivileges } = await MediaLibrary.getPermissionsAsync();
-    console.log('[PhotoLibraryService] Check permission - status:', status, 'accessPrivileges:', accessPrivileges);
+    logger.log('[PhotoLibraryService] Check permission - status:', status, 'accessPrivileges:', accessPrivileges);
     return status === 'granted' && accessPrivileges === 'all';
   }
 
@@ -46,7 +47,7 @@ class PhotoLibraryService {
 
       const photos: PhotoAsset[] = result.assets.map(asset => this.mapAssetToPhoto(asset));
 
-      console.log('[PhotoLibraryService] Fetched photos:', photos.length);
+      logger.log('[PhotoLibraryService] Fetched photos:', photos.length);
 
       return {
         photos,
@@ -54,7 +55,7 @@ class PhotoLibraryService {
         hasNextPage: result.hasNextPage,
       };
     } catch (error) {
-      console.error('[PhotoLibraryService] Error fetching photos:', error);
+      logger.error('[PhotoLibraryService] Error fetching photos:', error);
       return { photos: [], hasNextPage: false };
     }
   }
@@ -131,10 +132,10 @@ class PhotoLibraryService {
   async deletePhotos(photoIds: string[]): Promise<boolean> {
     try {
       const result = await MediaLibrary.deleteAssetsAsync(photoIds);
-      console.log('[PhotoLibraryService] Deleted photos:', result);
+      logger.log('[PhotoLibraryService] Deleted photos:', result);
       return result;
     } catch (error) {
-      console.error('[PhotoLibraryService] Error deleting photos:', error);
+      logger.error('[PhotoLibraryService] Error deleting photos:', error);
       return false;
     }
   }
@@ -144,7 +145,7 @@ class PhotoLibraryService {
       const info = await MediaLibrary.getAssetInfoAsync(photoId);
       return info;
     } catch (error) {
-      console.error('[PhotoLibraryService] Error getting photo info:', error);
+      logger.error('[PhotoLibraryService] Error getting photo info:', error);
       return null;
     }
   }
@@ -171,17 +172,17 @@ class PhotoLibraryService {
       return photoDate.getMonth() === targetMonth && photoDate.getDate() === targetDay;
     });
 
-    console.log('[PhotoLibraryService] On This Day photos found:', onThisDayPhotos.length);
+    logger.log('[PhotoLibraryService] On This Day photos found:', onThisDayPhotos.length);
     return onThisDayPhotos;
   }
 
   async deleteAsset(assetId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const result = await MediaLibrary.deleteAssetsAsync([assetId]);
-      console.log('[PhotoLibraryService] Delete result for', assetId, ':', result);
+      logger.log('[PhotoLibraryService] Delete result for', assetId, ':', result);
       return { success: result };
     } catch (error) {
-      console.error('[PhotoLibraryService] Error deleting asset:', error);
+      logger.error('[PhotoLibraryService] Error deleting asset:', error);
       return { success: false, error: String(error) };
     }
   }

@@ -1,11 +1,12 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
-import Purchases, { 
+import Purchases, {
   PurchasesPackage,
-  LOG_LEVEL 
+  LOG_LEVEL
 } from 'react-native-purchases';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/utils/logger';
 
 function getRCToken(): string {
   if (__DEV__ || Platform.OS === 'web') {
@@ -20,9 +21,11 @@ function getRCToken(): string {
 
 const rcToken = getRCToken();
 if (rcToken) {
-  Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+  Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
   Purchases.configure({ apiKey: rcToken });
-  console.log('[PurchasesContext] RevenueCat configured');
+  if (__DEV__) {
+    logger.log('[PurchasesContext] RevenueCat configured');
+  }
 }
 
 const PREMIUM_ENTITLEMENT = 'premium';
@@ -35,12 +38,12 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
     queryKey: ['rc-offerings'],
     queryFn: async () => {
       try {
-        console.log('[PurchasesContext] Fetching offerings...');
+        logger.log('[PurchasesContext] Fetching offerings...');
         const offerings = await Purchases.getOfferings();
-        console.log('[PurchasesContext] Offerings:', offerings.current?.identifier);
+        logger.log('[PurchasesContext] Offerings:', offerings.current?.identifier);
         return offerings;
       } catch (error) {
-        console.error('[PurchasesContext] Error fetching offerings:', error);
+        logger.error('[PurchasesContext] Error fetching offerings:', error);
         throw error;
       }
     },
@@ -52,12 +55,12 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
     queryKey: ['rc-customer-info'],
     queryFn: async () => {
       try {
-        console.log('[PurchasesContext] Fetching customer info...');
+        logger.log('[PurchasesContext] Fetching customer info...');
         const info = await Purchases.getCustomerInfo();
-        console.log('[PurchasesContext] Customer info:', info.entitlements.active);
+        logger.log('[PurchasesContext] Customer info:', info.entitlements.active);
         return info;
       } catch (error) {
-        console.error('[PurchasesContext] Error fetching customer info:', error);
+        logger.error('[PurchasesContext] Error fetching customer info:', error);
         throw error;
       }
     },
@@ -69,13 +72,13 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
     if (customerInfoQuery.data) {
       const hasPremium = !!customerInfoQuery.data.entitlements.active[PREMIUM_ENTITLEMENT];
       setIsPremium(hasPremium);
-      console.log('[PurchasesContext] Premium status:', hasPremium);
+      logger.log('[PurchasesContext] Premium status:', hasPremium);
     }
   }, [customerInfoQuery.data]);
 
   const purchaseMutation = useMutation({
     mutationFn: async (packageToPurchase: PurchasesPackage) => {
-      console.log('[PurchasesContext] Purchasing package:', packageToPurchase.identifier);
+      logger.log('[PurchasesContext] Purchasing package:', packageToPurchase.identifier);
       const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
       return customerInfo;
     },
@@ -83,16 +86,16 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
       const hasPremium = !!customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
       setIsPremium(hasPremium);
       queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
-      console.log('[PurchasesContext] Purchase successful, premium:', hasPremium);
+      logger.log('[PurchasesContext] Purchase successful, premium:', hasPremium);
     },
     onError: (error) => {
-      console.error('[PurchasesContext] Purchase error:', error);
+      logger.error('[PurchasesContext] Purchase error:', error);
     },
   });
 
   const restoreMutation = useMutation({
     mutationFn: async () => {
-      console.log('[PurchasesContext] Restoring purchases...');
+      logger.log('[PurchasesContext] Restoring purchases...');
       const customerInfo = await Purchases.restorePurchases();
       return customerInfo;
     },
@@ -100,10 +103,10 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
       const hasPremium = !!customerInfo.entitlements.active[PREMIUM_ENTITLEMENT];
       setIsPremium(hasPremium);
       queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
-      console.log('[PurchasesContext] Restore successful, premium:', hasPremium);
+      logger.log('[PurchasesContext] Restore successful, premium:', hasPremium);
     },
     onError: (error) => {
-      console.error('[PurchasesContext] Restore error:', error);
+      logger.error('[PurchasesContext] Restore error:', error);
     },
   });
 
