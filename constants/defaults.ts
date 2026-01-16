@@ -1,0 +1,1 @@
+export const DEFAULT_FILE_SIZE_BYTES = 2_000_000;

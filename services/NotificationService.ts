@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { logger } from '@/utils/logger';
 import { Platform } from 'react-native';
 
 class NotificationService {
@@ -13,7 +14,7 @@ class NotificationService {
 
   async requestPermission(): Promise<boolean> {
     if (Platform.OS === 'web') {
-      console.log('[NotificationService] Web platform - skipping permission request');
+      logger.log('[NotificationService] Web platform - skipping permission request');
       return true;
     }
 
@@ -26,10 +27,10 @@ class NotificationService {
         finalStatus = status;
       }
 
-      console.log('[NotificationService] Permission status:', finalStatus);
+      logger.log('[NotificationService] Permission status:', finalStatus);
       return finalStatus === 'granted';
     } catch (error) {
-      console.error('[NotificationService] Error requesting permission:', error);
+      logger.error('[NotificationService] Error requesting permission:', error);
       return false;
     }
   }
@@ -43,7 +44,7 @@ class NotificationService {
       const { status } = await Notifications.getPermissionsAsync();
       return status;
     } catch (error) {
-      console.error('[NotificationService] Error getting status:', error);
+      logger.error('[NotificationService] Error getting status:', error);
       return 'undetermined';
     }
   }
@@ -63,9 +64,9 @@ class NotificationService {
           repeats: true,
         },
       });
-      console.log('[NotificationService] Cleanup reminder scheduled');
+      logger.log('[NotificationService] Cleanup reminder scheduled');
     } catch (error) {
-      console.error('[NotificationService] Error scheduling notification:', error);
+      logger.error('[NotificationService] Error scheduling notification:', error);
     }
   }
 }

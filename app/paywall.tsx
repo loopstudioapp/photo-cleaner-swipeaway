@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { logger } from '@/utils/logger';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Switch } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,32 +59,32 @@ export default function PaywallScreen() {
     const packageToPurchase = selectedPlan === 'weekly' ? weeklyPackage : annualPackage;
     
     if (!packageToPurchase) {
-      console.log('[Paywall] No package available for selected plan');
+      logger.log('[Paywall] No package available for selected plan');
       router.back();
       return;
     }
 
     try {
       await purchasePackage(packageToPurchase);
-      console.log('[Paywall] Purchase successful');
+      logger.log('[Paywall] Purchase successful');
       navigateAfterPaywall();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       if (!errorMessage.includes('cancelled') && !errorMessage.includes('PURCHASE_CANCELLED')) {
         Alert.alert('Purchase Failed', 'Unable to complete purchase. Please try again.');
       }
-      console.log('[Paywall] Purchase error:', error);
+      logger.log('[Paywall] Purchase error:', error);
     }
   };
 
   const handleRestore = async () => {
     try {
       await restorePurchases();
-      console.log('[Paywall] Restore successful');
+      logger.log('[Paywall] Restore successful');
       navigateAfterPaywall();
     } catch (error) {
       Alert.alert('Restore Failed', 'Unable to restore purchases. Please try again.');
-      console.log('[Paywall] Restore error:', error);
+      logger.log('[Paywall] Restore error:', error);
     }
   };
 

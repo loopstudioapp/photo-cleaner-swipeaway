@@ -3,13 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, Platform } 
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Info, RotateCcw, Check, Bookmark, Trash2, Heart } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import * as MediaLibrary from 'expo-media-library';
 import { colors, typography, spacing, iconSizes } from '@/theme/Theme';
 import { useApp } from '@/context/AppContext';
 import { usePurchases } from '@/context/PurchasesContext';
 import { PhotoAsset } from '@/models/PhotoAsset';
 import SwipeCard from '@/components/SwipeCard';
+import { logger } from '@/utils/logger';
+import { safeImpact } from '@/utils/haptics';
+import { DEFAULT_FILE_SIZE_BYTES } from '@/constants/defaults';
 
 interface SwipeHistoryItem {
   photo: PhotoAsset;
@@ -55,19 +57,32 @@ export default function SwipeScreen() {
   const [pendingDeletions, setPendingDeletions] = useState<PhotoAsset[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const sessionEndedRef = useRef(false);
-  const [swipeCount, setSwipeCount] = useState(0);
+  const [, setSwipeCount] = useState(0);
   
   const { isPremium } = usePurchases();
 
   useEffect(() => {
-    if (mode === 'onThisDay') {
-      setIsLoadingOnThisDay(true);
-      getOnThisDayPhotos().then(photos => {
+    if (mode !== 'onThisDay') return;
+
+    let cancelled = false;
+    setIsLoadingOnThisDay(true);
+
+    getOnThisDayPhotos()
+      .then(photos => {
+        if (cancelled) return;
         setOnThisDayPhotos(photos);
         setIsLoadingOnThisDay(false);
-        console.log('[SwipeScreen] Loaded on this day photos:', photos.length);
+        logger.log('[SwipeScreen] Loaded on this day photos:', photos.length);
+      })
+      .catch(error => {
+        if (cancelled) return;
+        logger.error('[SwipeScreen] Error loading on this day photos:', error);
+        setIsLoadingOnThisDay(false);
       });
-    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [mode, getOnThisDayPhotos]);
 
   const photos = useMemo(() => {
@@ -83,7 +98,7 @@ export default function SwipeScreen() {
         height: 1280,
         creationTime: Date.now() - idx * 86400000,
         modificationTime: Date.now(),
-        fileSize: 2000000,
+        fileSize: DEFAULT_FILE_SIZE_BYTES,
         month: 'Jan 2024',
         year: 2024,
       }));
@@ -96,7 +111,12 @@ export default function SwipeScreen() {
       result = group?.photos || [];
     } else if (mode === 'random') {
       const allPhotos = monthGroups.flatMap(g => g.photos);
-      result = [...allPhotos].sort(() => Math.random() - 0.5);
+      const shuffled = [...allPhotos];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      result = shuffled;
     } else if (mode === 'onThisDay') {
       result = onThisDayPhotos;
     } else {
@@ -118,27 +138,31 @@ export default function SwipeScreen() {
 
   const handleFinishSession = useCallback(async () => {
     if (sessionEndedRef.current || isDeleting) return;
-    
+
     setIsDeleting(true);
     sessionEndedRef.current = true;
-    
-    if (pendingDeletions.length > 0 && Platform.OS !== 'web') {
-      const idsToDelete = pendingDeletions
-        .filter(p => !p.id.startsWith('placeholder'))
-        .map(p => p.id);
-      
-      if (idsToDelete.length > 0) {
-        console.log('[SwipeScreen] Batch deleting', idsToDelete.length, 'photos');
-        await batchDeletePhotos(idsToDelete);
+
+    try {
+      if (pendingDeletions.length > 0 && Platform.OS !== 'web') {
+        const idsToDelete = pendingDeletions
+          .filter(p => !p.id.startsWith('placeholder'))
+          .map(p => p.id);
+
+        if (idsToDelete.length > 0) {
+          logger.log('[SwipeScreen] Batch deleting', idsToDelete.length, 'photos');
+          await batchDeletePhotos(idsToDelete);
+        }
       }
+    } catch (error) {
+      logger.error('[SwipeScreen] Batch deletion failed:', error);
+      // Still allow user to exit even if deletion fails
+    } finally {
+      if (currentSession) {
+        endSwipeSession();
+      }
+      setIsDeleting(false);
+      router.back();
     }
-    
-    if (currentSession) {
-      endSwipeSession();
-    }
-    
-    setIsDeleting(false);
-    router.back();
   }, [pendingDeletions, batchDeletePhotos, currentSession, endSwipeSession, router, isDeleting]);
 
   const handleBack = useCallback(() => {
@@ -153,13 +177,13 @@ export default function SwipeScreen() {
         photosReviewed: (currentSession?.photosReviewed || 0) + 1,
         photosKept: (currentSession?.photosKept || 0) + 1,
       });
-      console.log('[SwipeScreen] Kept photo:', currentPhoto.id);
+      logger.log('[SwipeScreen] Kept photo:', currentPhoto.id);
     }
   }, [currentPhoto, currentIndex, currentSession, updateSwipeSession]);
 
   const handleSwipeLeft = useCallback(() => {
     if (currentPhoto) {
-      const photoSize = currentPhoto.fileSize || 2000000;
+      const photoSize = currentPhoto.fileSize || DEFAULT_FILE_SIZE_BYTES;
       
       // Add to pending deletions instead of deleting immediately
       setPendingDeletions(prev => [...prev, currentPhoto]);
@@ -171,22 +195,25 @@ export default function SwipeScreen() {
         photosDeleted: (currentSession?.photosDeleted || 0) + 1,
         spaceSaved: (currentSession?.spaceSaved || 0) + photoSize,
       });
-      console.log('[SwipeScreen] Marked for deletion:', currentPhoto.id, 'Size:', photoSize);
+      logger.log('[SwipeScreen] Marked for deletion:', currentPhoto.id, 'Size:', photoSize);
     }
   }, [currentPhoto, currentIndex, currentSession, updateSwipeSession]);
 
   const handleSwipeComplete = useCallback(() => {
     setCurrentIndex(prev => prev + 1);
-    
-    // Show paywall every 3 swipes for non-premium users
-    const newSwipeCount = swipeCount + 1;
-    setSwipeCount(newSwipeCount);
-    
-    if (!isPremium && newSwipeCount % 3 === 0) {
-      console.log('[SwipeScreen] Showing paywall after', newSwipeCount, 'swipes');
-      router.push('/paywall?source=swipe');
-    }
-  }, [swipeCount, isPremium, router]);
+
+    setSwipeCount(prev => {
+      const newCount = prev + 1;
+
+      // Schedule paywall navigation after state update completes
+      if (!isPremium && newCount % 3 === 0) {
+        logger.log('[SwipeScreen] Showing paywall after', newCount, 'swipes');
+        setTimeout(() => router.push('/paywall?source=swipe'), 0);
+      }
+
+      return newCount;
+    });
+  }, [isPremium, router]);
 
   const handleUndo = useCallback(() => {
     if (history.length === 0) return;
@@ -207,20 +234,20 @@ export default function SwipeScreen() {
       updateSwipeSession({
         photosReviewed: Math.max(0, (currentSession?.photosReviewed || 0) - 1),
         photosDeleted: Math.max(0, (currentSession?.photosDeleted || 0) - 1),
-        spaceSaved: Math.max(0, (currentSession?.spaceSaved || 0) - (lastAction.photo.fileSize || 2000000)),
+        spaceSaved: Math.max(0, (currentSession?.spaceSaved || 0) - (lastAction.photo.fileSize || DEFAULT_FILE_SIZE_BYTES)),
       });
     }
 
     setCurrentIndex(prev => Math.max(0, prev - 1));
     
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log('[SwipeScreen] Undid last action:', lastAction.action, 'for photo:', lastAction.photo.id);
+    safeImpact();
+    logger.log('[SwipeScreen] Undid last action:', lastAction.action, 'for photo:', lastAction.photo.id);
   }, [history, currentSession, updateSwipeSession]);
 
   const handleBookmark = useCallback(() => {
     if (currentPhoto) {
       toggleBookmark(currentPhoto.id);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      safeImpact();
     }
   }, [currentPhoto, toggleBookmark]);
 
@@ -247,7 +274,7 @@ export default function SwipeScreen() {
     setIsLoadingSize(true);
     try {
       const info = await MediaLibrary.getAssetInfoAsync(currentPhoto.id);
-      console.log('[SwipeScreen] Full asset info:', JSON.stringify(info, null, 2));
+      logger.log('[SwipeScreen] Full asset info:', JSON.stringify(info, null, 2));
       
       // Try multiple ways to get file size
       let size: number | null = null;
@@ -264,13 +291,13 @@ export default function SwipeScreen() {
       else if (currentPhoto.width && currentPhoto.height) {
         // Rough estimate: width * height * 3 bytes (RGB) / compression ratio (~10)
         size = Math.round((currentPhoto.width * currentPhoto.height * 3) / 10);
-        console.log('[SwipeScreen] Using estimated size based on dimensions');
+        logger.log('[SwipeScreen] Using estimated size based on dimensions');
       }
       
       setCurrentPhotoSize(size);
-      console.log('[SwipeScreen] Fetched file size:', size);
+      logger.log('[SwipeScreen] Fetched file size:', size);
     } catch (error) {
-      console.error('[SwipeScreen] Error fetching file size:', error);
+      logger.error('[SwipeScreen] Error fetching file size:', error);
       setCurrentPhotoSize(null);
     } finally {
       setIsLoadingSize(false);
