@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PhotoAsset, MonthGroup, AppSettings, UserStats, SwipeSession } from '@/models/PhotoAsset';
 import PhotoLibraryService from '@/services/PhotoLibraryService';
+import { logger } from '@/utils/logger';
 
 const SETTINGS_KEY = '@swipeaway_settings';
 const STATS_KEY = '@swipeaway_stats';
@@ -56,9 +57,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
         setBookmarkedPhotos(JSON.parse(bookmarksData));
       }
 
-      console.log('[AppContext] Loaded persisted data');
+      logger.log('[AppContext] Loaded persisted data');
     } catch (error) {
-      console.error('[AppContext] Error loading data:', error);
+      logger.error('[AppContext] Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -68,14 +69,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
-    console.log('[AppContext] Settings updated:', newSettings);
+    logger.log('[AppContext] Settings updated:', newSettings);
   }, [settings]);
 
   const updateStats = useCallback(async (newStats: Partial<UserStats>) => {
     const updated = { ...stats, ...newStats };
     setStats(updated);
     await AsyncStorage.setItem(STATS_KEY, JSON.stringify(updated));
-    console.log('[AppContext] Stats updated:', newStats);
+    logger.log('[AppContext] Stats updated:', newStats);
   }, [stats]);
 
   const loadPhotos = useCallback(async () => {
@@ -83,9 +84,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
     try {
       const groups = await photoService.getAllPhotosGroupedByMonth();
       setMonthGroups(groups);
-      console.log('[AppContext] Loaded month groups:', groups.length);
+      logger.log('[AppContext] Loaded month groups:', groups.length);
     } catch (error) {
-      console.error('[AppContext] Error loading photos:', error);
+      logger.error('[AppContext] Error loading photos:', error);
     } finally {
       setIsLoading(false);
     }
@@ -114,15 +115,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
       spaceSaved: 0,
     };
     setCurrentSession(session);
-    console.log('[AppContext] Started swipe session:', session.id);
+    logger.log('[AppContext] Started swipe session:', session.id);
     return session;
   }, []);
 
   const updateSwipeSession = useCallback((updates: Partial<SwipeSession>) => {
-    if (currentSession) {
-      setCurrentSession({ ...currentSession, ...updates });
-    }
-  }, [currentSession]);
+    setCurrentSession(prev => prev ? { ...prev, ...updates } : null);
+  }, []);
 
   const endSwipeSession = useCallback(async () => {
     if (currentSession) {
@@ -134,7 +133,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         sessionsCompleted: stats.sessionsCompleted + 1,
       });
       setCurrentSession(null);
-      console.log('[AppContext] Ended swipe session:', finalSession);
+      logger.log('[AppContext] Ended swipe session:', finalSession);
     }
   }, [currentSession, stats, updateStats]);
 
@@ -145,7 +144,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     
     setBookmarkedPhotos(newBookmarks);
     await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(newBookmarks));
-    console.log('[AppContext] Toggled bookmark:', photoId);
+    logger.log('[AppContext] Toggled bookmark:', photoId);
   }, [bookmarkedPhotos]);
 
   const isBookmarked = useCallback((photoId: string) => {
@@ -165,74 +164,62 @@ export const [AppProvider, useApp] = createContextHook(() => {
       const photos = await photoService.getOnThisDayAssets(new Date());
       return photos;
     } catch (error) {
-      console.error('[AppContext] Error getting on this day photos:', error);
+      logger.error('[AppContext] Error getting on this day photos:', error);
       return [];
     }
   }, [photoService]);
 
+  const removePhotosFromState = useCallback((assetIds: string[]) => {
+    if (assetIds.length === 0) return;
+
+    const idsSet = new Set(assetIds);
+    setMonthGroups(prevGroups => {
+      return prevGroups
+        .map(group => {
+          const filteredPhotos = group.photos.filter(photo => !idsSet.has(photo.id));
+          return {
+            ...group,
+            photos: filteredPhotos,
+            photoCount: filteredPhotos.length,
+          };
+        })
+        .filter(group => group.photoCount > 0);
+    });
+  }, []);
+
   const deletePhoto = useCallback(async (assetId: string): Promise<boolean> => {
     try {
       const result = await photoService.deleteAsset(assetId);
-      
       // Remove photo from monthGroups state regardless of deletion result
-      // This ensures deleted photos don't show up again
-      setMonthGroups(prevGroups => {
-        return prevGroups.map(group => ({
-          ...group,
-          photos: group.photos.filter(photo => photo.id !== assetId),
-          photoCount: group.photos.filter(photo => photo.id !== assetId).length,
-        })).filter(group => group.photoCount > 0);
-      });
-      
-      console.log('[AppContext] Removed photo from state:', assetId);
+      removePhotosFromState([assetId]);
+      logger.log('[AppContext] Removed photo from state:', assetId);
       return result.success;
     } catch (error) {
-      console.error('[AppContext] Error deleting photo:', error);
+      logger.error('[AppContext] Error deleting photo:', error);
       // Still remove from local state even if real deletion fails
-      setMonthGroups(prevGroups => {
-        return prevGroups.map(group => ({
-          ...group,
-          photos: group.photos.filter(photo => photo.id !== assetId),
-          photoCount: group.photos.filter(photo => photo.id !== assetId).length,
-        })).filter(group => group.photoCount > 0);
-      });
+      removePhotosFromState([assetId]);
       return false;
     }
-  }, [photoService]);
+  }, [photoService, removePhotosFromState]);
 
   const batchDeletePhotos = useCallback(async (assetIds: string[]): Promise<boolean> => {
     if (assetIds.length === 0) return true;
     
     try {
-      console.log('[AppContext] Batch deleting photos:', assetIds.length);
+      logger.log('[AppContext] Batch deleting photos:', assetIds.length);
       const result = await photoService.deletePhotos(assetIds);
       
       // Remove photos from monthGroups state
-      const idsSet = new Set(assetIds);
-      setMonthGroups(prevGroups => {
-        return prevGroups.map(group => ({
-          ...group,
-          photos: group.photos.filter(photo => !idsSet.has(photo.id)),
-          photoCount: group.photos.filter(photo => !idsSet.has(photo.id)).length,
-        })).filter(group => group.photoCount > 0);
-      });
-      
-      console.log('[AppContext] Batch delete result:', result);
+      removePhotosFromState(assetIds);
+      logger.log('[AppContext] Batch delete result:', result);
       return result;
     } catch (error) {
-      console.error('[AppContext] Error batch deleting photos:', error);
+      logger.error('[AppContext] Error batch deleting photos:', error);
       // Still remove from local state even if real deletion fails
-      const idsSet = new Set(assetIds);
-      setMonthGroups(prevGroups => {
-        return prevGroups.map(group => ({
-          ...group,
-          photos: group.photos.filter(photo => !idsSet.has(photo.id)),
-          photoCount: group.photos.filter(photo => !idsSet.has(photo.id)).length,
-        })).filter(group => group.photoCount > 0);
-      });
+      removePhotosFromState(assetIds);
       return false;
     }
-  }, [photoService]);
+  }, [photoService, removePhotosFromState]);
 
   const totalPhotoCount = useMemo(() => {
     return monthGroups.reduce((sum, group) => sum + group.photoCount, 0);

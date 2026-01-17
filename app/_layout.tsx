@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppProvider } from "@/context/AppContext";
 import { PurchasesProvider } from "@/context/PurchasesContext";
+import { singularService } from "@/services/SingularService";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +34,9 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
+    // Initialize Singular MMP for TikTok ads tracking
+    singularService.initialize();
+
     SplashScreen.hideAsync();
   }, []);
 
