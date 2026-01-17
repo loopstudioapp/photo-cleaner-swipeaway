@@ -12,6 +12,7 @@ import SwipeCard from '@/components/SwipeCard';
 import { logger } from '@/utils/logger';
 import { safeImpact } from '@/utils/haptics';
 import { DEFAULT_FILE_SIZE_BYTES } from '@/constants/defaults';
+import { singularService } from '@/services/SingularService';
 
 interface SwipeHistoryItem {
   photo: PhotoAsset;
@@ -158,6 +159,13 @@ export default function SwipeScreen() {
       // Still allow user to exit even if deletion fails
     } finally {
       if (currentSession) {
+        // Track session completion before ending
+        singularService.trackSessionComplete(
+          currentSession.photosReviewed,
+          currentSession.photosDeleted,
+          currentSession.spaceSaved
+        );
+
         endSwipeSession();
       }
       setIsDeleting(false);
@@ -178,16 +186,19 @@ export default function SwipeScreen() {
         photosKept: (currentSession?.photosKept || 0) + 1,
       });
       logger.log('[SwipeScreen] Kept photo:', currentPhoto.id);
+
+      // Track photo keep action
+      singularService.trackPhotoKeep(1);
     }
   }, [currentPhoto, currentIndex, currentSession, updateSwipeSession]);
 
   const handleSwipeLeft = useCallback(() => {
     if (currentPhoto) {
       const photoSize = currentPhoto.fileSize || DEFAULT_FILE_SIZE_BYTES;
-      
+
       // Add to pending deletions instead of deleting immediately
       setPendingDeletions(prev => [...prev, currentPhoto]);
-      
+
       setDeletedPhotos(prev => [...prev, currentPhoto.id]);
       setHistory(prev => [...prev, { photo: currentPhoto, action: 'delete', index: currentIndex }]);
       updateSwipeSession({
@@ -196,6 +207,9 @@ export default function SwipeScreen() {
         spaceSaved: (currentSession?.spaceSaved || 0) + photoSize,
       });
       logger.log('[SwipeScreen] Marked for deletion:', currentPhoto.id, 'Size:', photoSize);
+
+      // Track photo delete action
+      singularService.trackPhotoDelete(1);
     }
   }, [currentPhoto, currentIndex, currentSession, updateSwipeSession]);
 

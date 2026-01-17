@@ -7,6 +7,7 @@ import { X, Check } from 'lucide-react-native';
 import { colors, typography, spacing, radii } from '@/theme/Theme';
 import BigPillButton from '@/components/BigPillButton';
 import { usePurchases } from '@/context/PurchasesContext';
+import { singularService } from '@/services/SingularService';
 
 const features = [
   'Unlimited photo swiping',
@@ -39,6 +40,11 @@ export default function PaywallScreen() {
     }
   }, [isTrialEnabled]);
 
+  // Track paywall view on mount
+  useEffect(() => {
+    singularService.trackPaywallView(source || 'unknown');
+  }, [source]);
+
   const navigateAfterPaywall = () => {
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
@@ -57,7 +63,7 @@ export default function PaywallScreen() {
 
   const handleContinue = async () => {
     const packageToPurchase = selectedPlan === 'weekly' ? weeklyPackage : annualPackage;
-    
+
     if (!packageToPurchase) {
       logger.log('[Paywall] No package available for selected plan');
       router.back();
@@ -67,12 +73,26 @@ export default function PaywallScreen() {
     try {
       await purchasePackage(packageToPurchase);
       logger.log('[Paywall] Purchase successful');
+
+      // Track successful purchase
+      const productId = packageToPurchase.identifier;
+      const revenue = packageToPurchase.product.price;
+      const currency = packageToPurchase.product.currencyCode;
+      singularService.trackPurchase(productId, revenue, currency);
+
       navigateAfterPaywall();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (!errorMessage.includes('cancelled') && !errorMessage.includes('PURCHASE_CANCELLED')) {
+      const isCancelled = errorMessage.includes('cancelled') || errorMessage.includes('PURCHASE_CANCELLED');
+
+      if (!isCancelled) {
         Alert.alert('Purchase Failed', 'Unable to complete purchase. Please try again.');
+
+        // Track failed purchase (only if not cancelled by user)
+        const productId = packageToPurchase.identifier;
+        singularService.trackPurchaseFailed(productId, errorMessage);
       }
+
       logger.log('[Paywall] Purchase error:', error);
     }
   };
