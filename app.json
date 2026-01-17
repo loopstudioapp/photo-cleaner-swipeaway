@@ -104,8 +104,9 @@
         "origin": "https://rork.com/"
       },
       "eas": {
-        "projectId": "2f831943-21d7-4c2e-81fb-8906ce8d8fea"
+        "projectId": "16c05d5e-4f3d-441e-85ee-d8422fe9a4f2"
       }
-    }
+    },
+    "owner": "loop-studio"
   }
 }
