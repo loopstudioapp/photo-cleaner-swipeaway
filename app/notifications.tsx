@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { logger } from '@/utils/logger';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +14,7 @@ export default function NotificationsScreen() {
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   const handleContinue = async () => {
-    console.log('[NotificationsScreen] Requesting notification permission...');
+    logger.log('[NotificationsScreen] Requesting notification permission...');
     
     if (Platform.OS === 'web') {
       await completeOnboarding();
@@ -24,7 +25,7 @@ export default function NotificationsScreen() {
     const notificationService = NotificationService.getInstance();
     const granted = await notificationService.requestPermission();
     
-    console.log('[NotificationsScreen] Permission granted:', granted);
+    logger.log('[NotificationsScreen] Permission granted:', granted);
     
     if (granted) {
       await notificationService.scheduleCleanupReminder();

@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from '@/utils/logger';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,7 +35,7 @@ export default function MenuScreen() {
   };
 
   const handleRate = () => {
-    console.log('[MenuScreen] Rate app pressed');
+    logger.log('[MenuScreen] Rate app pressed');
   };
 
   return (

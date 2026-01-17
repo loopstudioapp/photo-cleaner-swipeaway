@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { logger } from '@/utils/logger';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Switch } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +7,7 @@ import { X, Check } from 'lucide-react-native';
 import { colors, typography, spacing, radii } from '@/theme/Theme';
 import BigPillButton from '@/components/BigPillButton';
 import { usePurchases } from '@/context/PurchasesContext';
+import { singularService } from '@/services/SingularService';
 
 const features = [
   'Unlimited photo swiping',
@@ -31,12 +33,21 @@ export default function PaywallScreen() {
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'yearly'>('weekly');
   const [isTrialEnabled, setIsTrialEnabled] = useState(false);
   const isNavigatingRef = useRef(false);
+  const hasTrackedViewRef = useRef(false);
 
   useEffect(() => {
-    if (isTrialEnabled) {
+    if (isTrialEnabled && selectedPlan !== 'weekly') {
       setSelectedPlan('weekly');
     }
-  }, [isTrialEnabled]);
+  }, [isTrialEnabled, selectedPlan]);
+
+  // Track paywall view on mount (only once)
+  useEffect(() => {
+    if (!hasTrackedViewRef.current) {
+      hasTrackedViewRef.current = true;
+      singularService.trackPaywallView(source || 'unknown');
+    }
+  }, [source]);
 
   const navigateAfterPaywall = () => {
     if (isNavigatingRef.current) return;
@@ -56,49 +67,67 @@ export default function PaywallScreen() {
 
   const handleContinue = async () => {
     const packageToPurchase = selectedPlan === 'weekly' ? weeklyPackage : annualPackage;
-    
+
     if (!packageToPurchase) {
-      console.log('[Paywall] No package available for selected plan');
+      logger.log('[Paywall] No package available for selected plan');
       router.back();
       return;
     }
 
     try {
       await purchasePackage(packageToPurchase);
-      console.log('[Paywall] Purchase successful');
+      logger.log('[Paywall] Purchase successful');
+
+      // Track successful purchase
+      const productId = packageToPurchase.identifier;
+      const revenue = packageToPurchase.product.price;
+      const currency = packageToPurchase.product.currencyCode;
+      singularService.trackPurchase(productId, revenue, currency);
+
       navigateAfterPaywall();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (!errorMessage.includes('cancelled') && !errorMessage.includes('PURCHASE_CANCELLED')) {
+      const isCancelled = errorMessage.includes('cancelled') || errorMessage.includes('PURCHASE_CANCELLED');
+
+      if (!isCancelled) {
         Alert.alert('Purchase Failed', 'Unable to complete purchase. Please try again.');
+
+        // Track failed purchase (only if not cancelled by user)
+        const productId = packageToPurchase.identifier;
+        singularService.trackPurchaseFailed(productId, errorMessage);
       }
-      console.log('[Paywall] Purchase error:', error);
+
+      logger.log('[Paywall] Purchase error:', error);
     }
   };
 
   const handleRestore = async () => {
     try {
       await restorePurchases();
-      console.log('[Paywall] Restore successful');
+      logger.log('[Paywall] Restore successful');
       navigateAfterPaywall();
     } catch (error) {
       Alert.alert('Restore Failed', 'Unable to restore purchases. Please try again.');
-      console.log('[Paywall] Restore error:', error);
+      logger.log('[Paywall] Restore error:', error);
     }
   };
-
-
-
-  if (isPremium && !isNavigatingRef.current) {
-    isNavigatingRef.current = true;
-    router.back();
-    return null;
-  }
 
   const weeklyPrice = weeklyPackage?.product?.priceString || '$4.99';
   const annualPrice = annualPackage?.product?.priceString || '$29.99';
 
   const isProcessing = isPurchasing || isRestoring;
+
+  const toggleTrial = () => setIsTrialEnabled((prev) => !prev);
+
+  const handleSelectPlan = (plan: 'weekly' | 'yearly') => {
+    if (isProcessing) return;
+
+    if (isTrialEnabled && plan === 'yearly') {
+      return;
+    }
+
+    setSelectedPlan(plan);
+  };
 
   const getButtonText = () => {
     if (selectedPlan === 'weekly') {
@@ -146,20 +175,20 @@ export default function PaywallScreen() {
             <View style={styles.plansSection}>
               <TouchableOpacity 
                 style={[styles.trialToggleRow, isTrialEnabled && styles.trialToggleRowActive]}
-                onPress={() => setIsTrialEnabled(!isTrialEnabled)}
+                onPress={toggleTrial}
                 activeOpacity={0.8}
                 disabled={isProcessing}
               >
                 <View style={styles.trialToggleTextContainer}>
                   {isTrialEnabled ? (
                     <>
-                      <Text style={styles.trialStatusTitle}>Free trial enabled</Text>
-                      <Text style={styles.trialToggleSubtitle}>Cancel anytime.</Text>
+                      <Text style={styles.trialStatusTitle}>Weekly plan selected</Text>
+                      <Text style={styles.trialToggleSubtitle}>3-day trial included automatically.</Text>
                     </>
                   ) : (
                     <>
-                      <Text style={styles.trialToggleTitle}>Not sure yet?</Text>
-                      <Text style={styles.trialToggleSubtitle}>Enable free trial</Text>
+                      <Text style={styles.trialToggleTitle}>Enable free trial</Text>
+                      <Text style={styles.trialToggleSubtitle}>Weekly plan already includes a 3-day trial; toggling just selects it.</Text>
                     </>
                   )}
                 </View>
@@ -170,7 +199,7 @@ export default function PaywallScreen() {
                 ) : (
                   <Switch
                     value={isTrialEnabled}
-                    onValueChange={setIsTrialEnabled}
+                    onValueChange={toggleTrial}
                     trackColor={{ false: '#E0E0E0', true: '#9B6CD1' }}
                     thumbColor={colors.white}
                     ios_backgroundColor="#E0E0E0"
@@ -179,7 +208,7 @@ export default function PaywallScreen() {
                 )}
               </TouchableOpacity>
 
-              {isTrialEnabled && (
+              {selectedPlan === 'weekly' && (
                 <View style={styles.dueTodayRow}>
                   <Text style={styles.dueTodayLeft}>Due today - $0.00</Text>
                   <Text style={styles.dueTodayRight}>3 days free</Text>
@@ -191,7 +220,7 @@ export default function PaywallScreen() {
                   styles.planCard,
                   selectedPlan === 'weekly' && styles.planCardSelected,
                 ]}
-                onPress={() => setSelectedPlan('weekly')}
+                onPress={() => handleSelectPlan('weekly')}
                 disabled={isProcessing}
               >
                 <View style={styles.centerBadge}>
@@ -223,9 +252,10 @@ export default function PaywallScreen() {
                 style={[
                   styles.planCard,
                   selectedPlan === 'yearly' && styles.planCardSelected,
+                  isTrialEnabled && styles.planCardDisabled,
                 ]}
-                onPress={() => setSelectedPlan('yearly')}
-                disabled={isProcessing}
+                onPress={() => handleSelectPlan('yearly')}
+                disabled={isProcessing || isTrialEnabled}
               >
                 <View style={styles.centerBadgeBestValue}>
                   <Text style={styles.centerBadgeBestValueText}>Best Value</Text>
@@ -417,6 +447,9 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'transparent',
     position: 'relative',
+  },
+  planCardDisabled: {
+    opacity: 0.6,
   },
   planCardSelected: {
     borderColor: colors.textPrimary,

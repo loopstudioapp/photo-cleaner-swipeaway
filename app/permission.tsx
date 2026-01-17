@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { logger } from '@/utils/logger';
 import { View, Text, StyleSheet, Platform, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +17,7 @@ export default function PermissionScreen() {
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
 
   const handleAllowAccess = async () => {
-    console.log('[PermissionScreen] Requesting photo access...');
+    logger.log('[PermissionScreen] Requesting photo access...');
     
     if (Platform.OS === 'web') {
       router.push('/notifications');
@@ -30,7 +31,7 @@ export default function PermissionScreen() {
     try {
       // First request read permission (this triggers the main photo access dialog)
       const readPermission = await MediaLibrary.requestPermissionsAsync(false);
-      console.log('[PermissionScreen] Read permission status:', readPermission.status, 'accessPrivileges:', readPermission.accessPrivileges);
+      logger.log('[PermissionScreen] Read permission status:', readPermission.status, 'accessPrivileges:', readPermission.accessPrivileges);
 
       // Check if we have full access to all photos
       const hasFullAccess = readPermission.status === 'granted' && readPermission.accessPrivileges === 'all';
@@ -39,19 +40,19 @@ export default function PermissionScreen() {
       if (hasFullAccess) {
         await updateSettings({ hasGrantedPhotoPermission: true });
         await loadPhotos();
-        console.log('[PermissionScreen] Full access granted, navigating to notifications');
+        logger.log('[PermissionScreen] Full access granted, navigating to notifications');
         router.push('/notifications');
       } else if (hasLimitedAccess) {
         // User selected "Select Photos" (limited) instead of "Allow Access to All Photos"
         // Need full access to delete without individual prompts
-        console.log('[PermissionScreen] Limited access granted, need full access for deletion');
+        logger.log('[PermissionScreen] Limited access granted, need full access for deletion');
         setIsLimitedAccess(true);
       } else {
-        console.log('[PermissionScreen] Permission denied');
+        logger.log('[PermissionScreen] Permission denied');
         setPermissionDenied(true);
       }
     } catch (error) {
-      console.error('[PermissionScreen] Error requesting permission:', error);
+      logger.error('[PermissionScreen] Error requesting permission:', error);
       setPermissionDenied(true);
     } finally {
       setIsRequesting(false);
