@@ -7,6 +7,13 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_REVENUECAT_TEST_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_SINGULAR_IOS_API_KEY": "SINGULAR_KEY_REMOVED",
+        "EXPO_PUBLIC_SINGULAR_IOS_SECRET": "SINGULAR_SECRET_REMOVED"
+      },
       "ios": {
         "resourceClass": "m-medium",
         "simulator": true
@@ -14,11 +21,24 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_REVENUECAT_TEST_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_SINGULAR_IOS_API_KEY": "SINGULAR_KEY_REMOVED",
+        "EXPO_PUBLIC_SINGULAR_IOS_SECRET": "SINGULAR_SECRET_REMOVED"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "REVENUECAT_KEY_REMOVED",
+        "EXPO_PUBLIC_SINGULAR_IOS_API_KEY": "SINGULAR_KEY_REMOVED",
+        "EXPO_PUBLIC_SINGULAR_IOS_SECRET": "SINGULAR_SECRET_REMOVED"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }

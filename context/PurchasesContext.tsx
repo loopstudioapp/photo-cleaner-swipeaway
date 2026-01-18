@@ -7,15 +7,19 @@ import Purchases, {
 } from 'react-native-purchases';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
+import Constants from 'expo-constants';
 
 function getRCToken(): string {
+  const extra = Constants.expoConfig?.extra;
+  const revenueCat = extra?.revenueCat || {};
+
   if (__DEV__ || Platform.OS === 'web') {
-    return process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY || '';
+    return revenueCat.testApiKey || process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY || '';
   }
   return Platform.select({
-    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY || '',
-    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || '',
-    default: process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY || '',
+    ios: revenueCat.iosApiKey || process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY || '',
+    android: revenueCat.androidApiKey || process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || '',
+    default: revenueCat.testApiKey || process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY || '',
   }) || '';
 }
 

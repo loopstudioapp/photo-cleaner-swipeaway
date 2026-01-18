@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { Singular, SingularConfig } from 'singular-react-native';
 import { logger } from '@/utils/logger';
+import Constants from 'expo-constants';
 
 /**
  * Singular MMP Service for TikTok Ads Tracking
@@ -28,13 +29,16 @@ class SingularService {
     }
 
     // Get API credentials from environment
+    const extra = Constants.expoConfig?.extra;
+    const singular = extra?.singular || {};
+
     const apiKey = Platform.select({
-      ios: process.env.EXPO_PUBLIC_SINGULAR_IOS_API_KEY,
-      android: process.env.EXPO_PUBLIC_SINGULAR_ANDROID_API_KEY,
+      ios: singular.iosApiKey || process.env.EXPO_PUBLIC_SINGULAR_IOS_API_KEY,
+      android: singular.androidApiKey || process.env.EXPO_PUBLIC_SINGULAR_ANDROID_API_KEY,
     });
     const apiSecret = Platform.select({
-      ios: process.env.EXPO_PUBLIC_SINGULAR_IOS_SECRET,
-      android: process.env.EXPO_PUBLIC_SINGULAR_ANDROID_SECRET,
+      ios: singular.iosSecret || process.env.EXPO_PUBLIC_SINGULAR_IOS_SECRET,
+      android: singular.androidSecret || process.env.EXPO_PUBLIC_SINGULAR_ANDROID_SECRET,
     });
 
     // Skip initialization if no credentials (web or missing config)
