@@ -44,3 +44,4 @@ yarn-error.*
 rork-eslint.config.js
 
 *.md
+.npmrc
