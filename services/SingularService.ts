@@ -58,6 +58,12 @@ class SingularService {
       const config = new SingularConfig(apiKey, apiSecret);
       config.withSessionTimeoutInSec(60); // 60 seconds session timeout
 
+      // Enable SKAdNetwork (required for iOS attribution)
+      config.skAdNetworkEnabled = true;
+
+      // Wait for ATT authorization before sending first session (iOS 14.5+)
+      config.waitForTrackingAuthorizationWithTimeoutInterval = 300; // 300 seconds
+
       if (__DEV__) {
         config.withLoggingEnabled();
       }

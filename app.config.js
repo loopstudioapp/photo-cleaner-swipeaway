@@ -19,7 +19,8 @@ module.exports = {
       infoPlist: {
         NSPhotoLibraryUsageDescription: "Allow $(PRODUCT_NAME) to access your photos.",
         NSPhotoLibraryAddUsageDescription: "Allow $(PRODUCT_NAME) to save photos.",
-        ITSAppUsesNonExemptEncryption: false
+        ITSAppUsesNonExemptEncryption: false,
+        NSUserTrackingUsageDescription: "This helps us measure ad performance and improve your experience."
       },
       associatedDomains: [
         "applinks:swipeaway.sng.link"
