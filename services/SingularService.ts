@@ -41,6 +41,19 @@ class SingularService {
       android: singular.androidSecret || process.env.EXPO_PUBLIC_SINGULAR_ANDROID_SECRET,
     });
 
+    const enableLogsFlag =
+      Constants.expoConfig?.extra?.singular?.enableLogs === true ||
+      process.env.EXPO_PUBLIC_ENABLE_SINGULAR_LOGS === 'true';
+
+    // Force one error-level log so it shows up in TestFlight/production device logs
+    logger.log('[SingularService] Init status', {
+      platform: Platform.OS,
+      hasKey: !!apiKey,
+      hasSecret: !!apiSecret,
+      enableLogsFlag,
+      dev: __DEV__,
+    });
+
     // Skip initialization if no credentials (web or missing config)
     if (!apiKey || !apiSecret || Platform.OS === 'web') {
       logger.log('[SingularService] Skipping initialization (no credentials or web platform)');
@@ -61,7 +74,11 @@ class SingularService {
       // Enable SKAdNetwork (required for iOS attribution)
       config.skAdNetworkEnabled = true;
 
-      if (__DEV__) {
+      // Wait for ATT authorization before sending first session (iOS 14.5+)
+      // ATT prompt is shown in _layout.tsx before Singular init
+      config.waitForTrackingAuthorizationWithTimeoutInterval = 60; // 60 seconds timeout
+
+      if (__DEV__ || enableLogsFlag) {
         config.withLoggingEnabled();
       }
 
@@ -73,6 +90,22 @@ class SingularService {
       logger.error('[SingularService] Initialization failed:', error);
       this.isInitialized = true;
       this.isEnabled = false;
+    }
+
+    // Best-effort Device ID log for dashboard search; do not fail init if unsupported
+    if (this.isEnabled) {
+      try {
+        const getDeviceId = (Singular as any)?.getDeviceId;
+        if (typeof getDeviceId === 'function') {
+          getDeviceId((deviceId: string) => {
+            logger.log('[SingularService] Device ID', deviceId);
+          });
+        } else {
+          logger.log('[SingularService] Device ID lookup not available in SDK version');
+        }
+      } catch (error) {
+        logger.error('[SingularService] Device ID lookup failed', error);
+      }
     }
   }
 
@@ -119,16 +152,6 @@ class SingularService {
       revenue,
       currency,
     });
-
-    // Also send revenue event for proper attribution
-    try {
-      if (this.isEnabled) {
-        Singular.customRevenue('purchase', currency, revenue);
-        logger.log('[SingularService] Revenue tracked:', { productId, revenue, currency });
-      }
-    } catch (error) {
-      logger.error('[SingularService] Failed to track revenue:', error);
-    }
   }
 
   /**
@@ -186,7 +209,8 @@ class SingularService {
     if (!this.isEnabled) return;
 
     try {
-      Singular.setCustomUserId(value);
+      // Use setGlobalProperty for custom attributes (not setCustomUserId)
+      Singular.setGlobalProperty(key, value, true); // true = overwrite if exists
       logger.log(`[SingularService] User attribute set: ${key} = ${value}`);
     } catch (error) {
       logger.error('[SingularService] Failed to set user attribute:', error);

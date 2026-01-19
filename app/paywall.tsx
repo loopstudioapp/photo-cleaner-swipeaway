@@ -78,11 +78,8 @@ export default function PaywallScreen() {
       await purchasePackage(packageToPurchase);
       logger.log('[Paywall] Purchase successful');
 
-      // Track successful purchase
-      const productId = packageToPurchase.identifier;
-      const revenue = packageToPurchase.product.price;
-      const currency = packageToPurchase.product.currencyCode;
-      singularService.trackPurchase(productId, revenue, currency);
+      // Note: Purchase events are sent to Singular automatically via RevenueCat integration
+      // Do not track here to avoid double counting
 
       navigateAfterPaywall();
     } catch (error: unknown) {
@@ -93,6 +90,7 @@ export default function PaywallScreen() {
         Alert.alert('Purchase Failed', 'Unable to complete purchase. Please try again.');
 
         // Track failed purchase (only if not cancelled by user)
+        // Note: RevenueCat doesn't send failed purchases, so we track them client-side
         const productId = packageToPurchase.identifier;
         singularService.trackPurchaseFailed(productId, errorMessage);
       }

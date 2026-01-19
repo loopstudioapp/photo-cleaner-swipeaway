@@ -95,7 +95,8 @@ module.exports = {
           defaultChannel: "default",
           enableBackgroundRemoteNotifications: false
         }
-      ]
+      ],
+      "expo-tracking-transparency"
     ],
     experiments: {
       typedRoutes: true

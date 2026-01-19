@@ -3,12 +3,14 @@
  * Prevents console spam in production while preserving errors
  */
 
+const shouldLogInProd = process.env.EXPO_PUBLIC_ENABLE_SINGULAR_LOGS === 'true';
+
 export const logger = {
   /**
    * Log debug information (dev only)
    */
   log: (...args: any[]) => {
-    if (__DEV__) {
+    if (__DEV__ || shouldLogInProd) {
       console.log(...args);
     }
   },
