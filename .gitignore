@@ -45,3 +45,4 @@ rork-eslint.config.js
 
 *.md
 .npmrc
+bun.lock

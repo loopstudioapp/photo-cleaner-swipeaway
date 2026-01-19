@@ -24,11 +24,12 @@ export default function NotificationsScreen() {
 
     const notificationService = NotificationService.getInstance();
     const granted = await notificationService.requestPermission();
-    
+
     logger.log('[NotificationsScreen] Permission granted:', granted);
-    
+
     if (granted) {
-      await notificationService.scheduleCleanupReminder();
+      // Register background task for storage checks (weekly in prod, 5 min in debug)
+      await notificationService.registerStorageCheckTask();
       await completeOnboarding();
       router.replace('/home');
     } else {

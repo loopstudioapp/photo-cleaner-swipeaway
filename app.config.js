@@ -20,7 +20,9 @@ module.exports = {
         NSPhotoLibraryUsageDescription: "Allow $(PRODUCT_NAME) to access your photos.",
         NSPhotoLibraryAddUsageDescription: "Allow $(PRODUCT_NAME) to save photos.",
         ITSAppUsesNonExemptEncryption: false,
-        NSUserTrackingUsageDescription: "This helps us measure ad performance and improve your experience."
+        NSUserTrackingUsageDescription: "This helps us measure ad performance and improve your experience.",
+        BGTaskSchedulerPermittedIdentifiers: ["storageCheck"],
+        UIBackgroundModes: ["fetch"]
       },
       associatedDomains: [
         "applinks:swipeaway.sng.link"

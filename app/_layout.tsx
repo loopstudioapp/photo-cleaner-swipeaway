@@ -1,20 +1,48 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import React, { useEffect, useRef } from "react";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { getTrackingPermissionsAsync, requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import { AppProvider } from "@/context/AppContext";
 import { PurchasesProvider } from "@/context/PurchasesContext";
 import { singularService } from "@/services/SingularService";
 import { logger } from "@/utils/logger";
+
+// Configure notification handler for local notifications
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Handle notification tap when app is in foreground or background
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      logger.log('[RootLayout] Notification tapped:', data);
+
+      // Navigate to home when storage notification is tapped
+      if (data?.type === 'low_space_alert') {
+        router.push('/home');
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [router]);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
@@ -36,35 +64,33 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const initStartedRef = useRef(false);
+  const notificationCheckedRef = useRef(false);
+
   useEffect(() => {
     let isMounted = true;
 
     const init = async () => {
-      let attStatus: string | null = null;
+      if (initStartedRef.current) return;
+      initStartedRef.current = true;
 
-      try {
-        if (Platform.OS === "ios") {
-          const current = await getTrackingPermissionsAsync();
-          let status = current.status;
-
-          if (status === "not-determined") {
-            const requested = await requestTrackingPermissionsAsync();
-            status = requested.status;
-          }
-
-          attStatus = status;
-          logger.log("[RootLayout] ATT status:", status);
-        }
-      } catch (error) {
-        logger.error("[RootLayout] ATT prompt failed", error);
-      }
-
-      // Initialize Singular MMP for TikTok ads tracking (after ATT)
+      // Initialize Singular MMP for TikTok ads tracking
+      // Singular is configured to wait for ATT authorization (60s timeout)
+      // ATT will be requested in intro.tsx and status will be set there
       singularService.initialize();
 
-      // Set ATT status as Singular user attribute (after initialization)
-      if (attStatus && Platform.OS === "ios") {
-        singularService.setUserAttribute("att_status", attStatus);
+      // Check if app was opened from a notification (when app was killed)
+      if (!notificationCheckedRef.current && Platform.OS !== "web") {
+        notificationCheckedRef.current = true;
+        try {
+          const response = await Notifications.getLastNotificationResponseAsync();
+          if (response?.notification.request.content.data?.type === 'low_space_alert') {
+            logger.log("[RootLayout] App opened from notification");
+            // The router navigation will be handled in RootLayoutNav after navigation is ready
+          }
+        } catch (error) {
+          logger.error("[RootLayout] Error checking last notification:", error);
+        }
       }
 
       if (isMounted) {
@@ -72,10 +98,22 @@ export default function RootLayout() {
       }
     };
 
-    init();
+    const handleAppStateChange = (state: AppStateStatus) => {
+      if (state === "active") {
+        init();
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+
+    // If app is already active (cold start), trigger immediately
+    if (AppState.currentState === "active") {
+      init();
+    }
 
     return () => {
       isMounted = false;
+      subscription.remove();
     };
   }, []);
 

@@ -1,8 +1,10 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import { PhotoAsset, MonthGroup, AppSettings, UserStats, SwipeSession } from '@/models/PhotoAsset';
 import PhotoLibraryService from '@/services/PhotoLibraryService';
+import NotificationService from '@/services/NotificationService';
 import { logger } from '@/utils/logger';
 
 const SETTINGS_KEY = '@swipeaway_settings';
@@ -34,10 +36,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [bookmarkedPhotos, setBookmarkedPhotos] = useState<string[]>([]);
 
   const photoService = useMemo(() => PhotoLibraryService.getInstance(), []);
+  const notificationService = useMemo(() => NotificationService.getInstance(), []);
 
   useEffect(() => {
     loadPersistedData();
   }, []);
+
+  // Background task registration is now handled in notifications.tsx after permission is granted
+  // No manual or foreground checks needed - only background task runs
 
   const loadPersistedData = async () => {
     try {

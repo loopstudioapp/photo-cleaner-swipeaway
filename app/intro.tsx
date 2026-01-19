@@ -1,15 +1,24 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@/theme/Theme';
 import BigPillButton from '@/components/BigPillButton';
 import PhotoGridCollage from '@/components/PhotoGridCollage';
+import { requestTrackingPermissionOnce } from '@/services/TrackingPermissionService';
+import { singularService } from '@/services/SingularService';
 
 export default function IntroGridScreen() {
   const router = useRouter();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    // Trigger ATT prompt and WAIT for user response before proceeding
+    const status = await requestTrackingPermissionOnce(400);
+
+    if (status && Platform.OS === 'ios') {
+      singularService.setUserAttribute('att_status', status);
+    }
+
     router.push('/tutorial');
   };
 
