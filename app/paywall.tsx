@@ -36,10 +36,10 @@ export default function PaywallScreen() {
   const hasTrackedViewRef = useRef(false);
 
   useEffect(() => {
-    if (isTrialEnabled && selectedPlan !== 'weekly') {
+    if (isTrialEnabled) {
       setSelectedPlan('weekly');
     }
-  }, [isTrialEnabled, selectedPlan]);
+  }, [isTrialEnabled]);
 
   // Track paywall view on mount (only once)
   useEffect(() => {
@@ -115,17 +115,6 @@ export default function PaywallScreen() {
 
   const isProcessing = isPurchasing || isRestoring;
 
-  const toggleTrial = () => setIsTrialEnabled((prev) => !prev);
-
-  const handleSelectPlan = (plan: 'weekly' | 'yearly') => {
-    if (isProcessing) return;
-
-    if (isTrialEnabled && plan === 'yearly') {
-      return;
-    }
-
-    setSelectedPlan(plan);
-  };
 
   const getButtonText = () => {
     if (selectedPlan === 'weekly') {
@@ -171,22 +160,22 @@ export default function PaywallScreen() {
             </View>
           ) : (
             <View style={styles.plansSection}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.trialToggleRow, isTrialEnabled && styles.trialToggleRowActive]}
-                onPress={toggleTrial}
+                onPress={() => setIsTrialEnabled(!isTrialEnabled)}
                 activeOpacity={0.8}
                 disabled={isProcessing}
               >
                 <View style={styles.trialToggleTextContainer}>
                   {isTrialEnabled ? (
                     <>
-                      <Text style={styles.trialStatusTitle}>Weekly plan selected</Text>
-                      <Text style={styles.trialToggleSubtitle}>3-day trial included automatically.</Text>
+                      <Text style={styles.trialStatusTitle}>Free trial enabled</Text>
+                      <Text style={styles.trialToggleSubtitle}>Cancel anytime.</Text>
                     </>
                   ) : (
                     <>
-                      <Text style={styles.trialToggleTitle}>Enable free trial</Text>
-                      <Text style={styles.trialToggleSubtitle}>Weekly plan already includes a 3-day trial; toggling just selects it.</Text>
+                      <Text style={styles.trialToggleTitle}>Not sure yet?</Text>
+                      <Text style={styles.trialToggleSubtitle}>Enable free trial</Text>
                     </>
                   )}
                 </View>
@@ -197,7 +186,7 @@ export default function PaywallScreen() {
                 ) : (
                   <Switch
                     value={isTrialEnabled}
-                    onValueChange={toggleTrial}
+                    onValueChange={setIsTrialEnabled}
                     trackColor={{ false: '#E0E0E0', true: '#9B6CD1' }}
                     thumbColor={colors.white}
                     ios_backgroundColor="#E0E0E0"
@@ -206,7 +195,7 @@ export default function PaywallScreen() {
                 )}
               </TouchableOpacity>
 
-              {selectedPlan === 'weekly' && (
+              {isTrialEnabled && (
                 <View style={styles.dueTodayRow}>
                   <Text style={styles.dueTodayLeft}>Due today - $0.00</Text>
                   <Text style={styles.dueTodayRight}>3 days free</Text>
@@ -218,7 +207,7 @@ export default function PaywallScreen() {
                   styles.planCard,
                   selectedPlan === 'weekly' && styles.planCardSelected,
                 ]}
-                onPress={() => handleSelectPlan('weekly')}
+                onPress={() => setSelectedPlan('weekly')}
                 disabled={isProcessing}
               >
                 <View style={styles.centerBadge}>
@@ -250,10 +239,9 @@ export default function PaywallScreen() {
                 style={[
                   styles.planCard,
                   selectedPlan === 'yearly' && styles.planCardSelected,
-                  isTrialEnabled && styles.planCardDisabled,
                 ]}
-                onPress={() => handleSelectPlan('yearly')}
-                disabled={isProcessing || isTrialEnabled}
+                onPress={() => setSelectedPlan('yearly')}
+                disabled={isProcessing}
               >
                 <View style={styles.centerBadgeBestValue}>
                   <Text style={styles.centerBadgeBestValueText}>Best Value</Text>
@@ -445,9 +433,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'transparent',
     position: 'relative',
-  },
-  planCardDisabled: {
-    opacity: 0.6,
   },
   planCardSelected: {
     borderColor: colors.textPrimary,

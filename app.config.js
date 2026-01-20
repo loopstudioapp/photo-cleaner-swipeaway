@@ -1,6 +1,6 @@
 module.exports = {
   expo: {
-    name: "Photo Cleaner: SwipeAway",
+    name: "SwipeAway",
     slug: "swipeaway-photo-cleaner",
     version: "1.0.0",
     orientation: "portrait",
