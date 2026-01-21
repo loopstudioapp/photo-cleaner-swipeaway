@@ -42,8 +42,15 @@ export const [AppProvider, useApp] = createContextHook(() => {
     loadPersistedData();
   }, []);
 
-  // Background task registration is now handled in notifications.tsx after permission is granted
-  // No manual or foreground checks needed - only background task runs
+  useEffect(() => {
+    const registerBackgroundTaskOnStart = async () => {
+      if (Platform.OS === 'web') return;
+      logger.log('[AppContext] Registering background task on app start');
+      await notificationService.registerStorageCheckTask();
+    };
+
+    void registerBackgroundTaskOnStart();
+  }, [notificationService]);
 
   const loadPersistedData = async () => {
     try {

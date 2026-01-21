@@ -28,7 +28,7 @@ export default function NotificationsScreen() {
     logger.log('[NotificationsScreen] Permission granted:', granted);
 
     if (granted) {
-      // Register background task for storage checks (weekly in prod, 5 min in debug)
+      // Register background task for storage checks (weekly in prod, 2 min in debug)
       await notificationService.registerStorageCheckTask();
       await completeOnboarding();
       router.replace('/home');

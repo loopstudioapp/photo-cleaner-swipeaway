@@ -21,8 +21,11 @@ module.exports = {
         NSPhotoLibraryAddUsageDescription: "Allow $(PRODUCT_NAME) to save photos.",
         ITSAppUsesNonExemptEncryption: false,
         NSUserTrackingUsageDescription: "This helps us measure ad performance and improve your experience.",
-        BGTaskSchedulerPermittedIdentifiers: ["storageCheck"],
-        UIBackgroundModes: ["fetch"]
+        BGTaskSchedulerPermittedIdentifiers: [
+          "app.swipeaway.storageCheck",
+          "com.expo.modules.backgroundtask.processing"
+        ],
+        UIBackgroundModes: ["processing"]
       },
       associatedDomains: [
         "applinks:swipeaway.sng.link"
@@ -98,6 +101,7 @@ module.exports = {
           enableBackgroundRemoteNotifications: false
         }
       ],
+      "expo-background-task",
       "expo-tracking-transparency"
     ],
     experiments: {
