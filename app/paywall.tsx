@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logger } from '@/utils/logger';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Switch, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Check } from 'lucide-react-native';
@@ -108,6 +108,14 @@ export default function PaywallScreen() {
       Alert.alert('Restore Failed', 'Unable to restore purchases. Please try again.');
       logger.log('[Paywall] Restore error:', error);
     }
+  };
+
+  const handleOpenTerms = () => {
+    Linking.openURL('https://loopstudio.tech/#terms');
+  };
+
+  const handleOpenPrivacy = () => {
+    Linking.openURL('https://loopstudio.tech/#privacy');
   };
 
   const weeklyPrice = weeklyPackage?.product?.priceString || '$4.99';
@@ -285,9 +293,15 @@ export default function PaywallScreen() {
             )}
           </View>
 
-          <TouchableOpacity style={styles.termsButton}>
-            <Text style={styles.termsText}>Terms of Use</Text>
-          </TouchableOpacity>
+          <View style={styles.legalLinksContainer}>
+            <TouchableOpacity onPress={handleOpenTerms}>
+              <Text style={styles.termsText}>Terms of Service</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>•</Text>
+            <TouchableOpacity onPress={handleOpenPrivacy}>
+              <Text style={styles.termsText}>Privacy Policy</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -526,9 +540,17 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: colors.textPrimary,
   },
-  termsButton: {
+  legalLinksContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: spacing.sm,
+    gap: spacing.xs,
+  },
+  legalSeparator: {
+    fontSize: typography.small.fontSize,
+    color: colors.textSecondary,
+    marginHorizontal: spacing.xs,
   },
   termsText: {
     fontSize: typography.small.fontSize,
