@@ -17,8 +17,8 @@ module.exports = {
       supportsTablet: false,
       bundleIdentifier: "app.swipeaway-photo-app",
       infoPlist: {
-        NSPhotoLibraryUsageDescription: "Allow $(PRODUCT_NAME) to access your photos.",
-        NSPhotoLibraryAddUsageDescription: "Allow $(PRODUCT_NAME) to save photos.",
+        NSPhotoLibraryUsageDescription: "SwipeAway needs access to your photo library to identify and help you remove duplicate, blurry, and unnecessary photos. Photos are processed on your device and are not uploaded or stored on our servers.",
+        NSPhotoLibraryAddUsageDescription: "SwipeAway needs access to your photo library to identify and help you remove duplicate, blurry, and unnecessary photos. Photos are processed on your device and are not uploaded or stored on our servers.",
         ITSAppUsesNonExemptEncryption: false,
         NSUserTrackingUsageDescription: "This helps us measure ad performance and improve your experience.",
         BGTaskSchedulerPermittedIdentifiers: [
@@ -88,8 +88,8 @@ module.exports = {
       [
         "expo-media-library",
         {
-          photosPermission: "Allow $(PRODUCT_NAME) to access your photos.",
-          savePhotosPermission: "Allow $(PRODUCT_NAME) to save photos.",
+          photosPermission: "SwipeAway needs access to your photo library to identify and help you remove duplicate, blurry, and unnecessary photos. Photos are processed on your device and are not uploaded or stored on our servers.",
+          savePhotosPermission: "SwipeAway needs access to your photo library to identify and help you remove duplicate, blurry, and unnecessary photos. Photos are processed on your device and are not uploaded or stored on our servers.",
           isAccessMediaLocationEnabled: true
         }
       ],
