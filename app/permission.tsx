@@ -100,7 +100,7 @@ export default function PermissionScreen() {
         <SafeAreaView edges={['bottom']} style={styles.buttonSafeArea}>
           <View style={styles.buttonContainer}>
             <BigPillButton
-              title={isRequesting ? "Requesting..." : ((permissionDenied || isLimitedAccess) ? "Open Settings" : "Allow Photo Access")}
+              title={isRequesting ? "Requesting..." : ((permissionDenied || isLimitedAccess) ? "Open Settings" : "Continue")}
               onPress={(permissionDenied || isLimitedAccess) ? handleOpenSettings : handleAllowAccess}
               variant="green"
             />
