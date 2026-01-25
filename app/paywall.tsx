@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logger } from '@/utils/logger';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Switch, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Check } from 'lucide-react-native';
@@ -31,15 +31,8 @@ export default function PaywallScreen() {
   } = usePurchases();
   
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'yearly'>('weekly');
-  const [isTrialEnabled, setIsTrialEnabled] = useState(false);
   const isNavigatingRef = useRef(false);
   const hasTrackedViewRef = useRef(false);
-
-  useEffect(() => {
-    if (isTrialEnabled) {
-      setSelectedPlan('weekly');
-    }
-  }, [isTrialEnabled]);
 
   // Track paywall view on mount (only once)
   useEffect(() => {
@@ -123,7 +116,6 @@ export default function PaywallScreen() {
 
   const isProcessing = isPurchasing || isRestoring;
 
-
   const getButtonText = () => {
     if (selectedPlan === 'weekly') {
       return 'Try For $0.00';
@@ -169,48 +161,6 @@ export default function PaywallScreen() {
           ) : (
             <View style={styles.plansSection}>
               <TouchableOpacity
-                style={[styles.trialToggleRow, isTrialEnabled && styles.trialToggleRowActive]}
-                onPress={() => setIsTrialEnabled(!isTrialEnabled)}
-                activeOpacity={0.8}
-                disabled={isProcessing}
-              >
-                <View style={styles.trialToggleTextContainer}>
-                  {isTrialEnabled ? (
-                    <>
-                      <Text style={styles.trialStatusTitle}>Free trial enabled</Text>
-                      <Text style={styles.trialToggleSubtitle}>Cancel anytime.</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.trialToggleTitle}>Not sure yet?</Text>
-                      <Text style={styles.trialToggleSubtitle}>Enable free trial</Text>
-                    </>
-                  )}
-                </View>
-                {isTrialEnabled ? (
-                  <View style={styles.trialStatusCheckCircle}>
-                    <Check size={16} color={colors.white} strokeWidth={3} />
-                  </View>
-                ) : (
-                  <Switch
-                    value={isTrialEnabled}
-                    onValueChange={setIsTrialEnabled}
-                    trackColor={{ false: '#E0E0E0', true: '#9B6CD1' }}
-                    thumbColor={colors.white}
-                    ios_backgroundColor="#E0E0E0"
-                    disabled={isProcessing}
-                  />
-                )}
-              </TouchableOpacity>
-
-              {isTrialEnabled && (
-                <View style={styles.dueTodayRow}>
-                  <Text style={styles.dueTodayLeft}>Due today - $0.00</Text>
-                  <Text style={styles.dueTodayRight}>3 days free</Text>
-                </View>
-              )}
-
-              <TouchableOpacity
                 style={[
                   styles.planCard,
                   selectedPlan === 'weekly' && styles.planCardSelected,
@@ -242,6 +192,13 @@ export default function PaywallScreen() {
                   </View>
                 </View>
               </TouchableOpacity>
+
+              {selectedPlan === 'weekly' && (
+                <View style={styles.dueTodayRow}>
+                  <Text style={styles.dueTodayLeft}>Due today - $0.00</Text>
+                  <Text style={styles.dueTodayRight}>Cancel anytime</Text>
+                </View>
+              )}
 
               <TouchableOpacity
                 style={[
@@ -294,12 +251,12 @@ export default function PaywallScreen() {
           </View>
 
           <View style={styles.legalLinksContainer}>
-            <TouchableOpacity onPress={handleOpenTerms}>
-              <Text style={styles.termsText}>Terms of Service</Text>
-            </TouchableOpacity>
-            <Text style={styles.legalSeparator}>•</Text>
             <TouchableOpacity onPress={handleOpenPrivacy}>
               <Text style={styles.termsText}>Privacy Policy</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>•</Text>
+            <TouchableOpacity onPress={handleOpenTerms}>
+              <Text style={styles.termsText}>Terms of Use</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -380,54 +337,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     gap: spacing.sm,
   },
-  trialToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.white,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-  },
-  trialToggleRowActive: {
-    backgroundColor: 'rgba(155, 108, 209, 0.12)',
-    borderWidth: 2,
-    borderColor: '#9B6CD1',
-  },
-  trialToggleTextContainer: {
-    flex: 1,
-  },
-  trialToggleTitle: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '700' as const,
-    color: colors.textPrimary,
-  },
-  trialToggleSubtitle: {
-    fontSize: typography.small.fontSize,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  trialStatusTitle: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '700' as const,
-    color: '#9B6CD1',
-  },
-  trialStatusCheckCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#9B6CD1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   dueTodayRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
+    marginBottom: 4,
   },
   dueTodayLeft: {
     fontSize: typography.small.fontSize,
