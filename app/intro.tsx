@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@/theme/Theme';
@@ -24,29 +24,34 @@ export default function IntroGridScreen() {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.gridContainer}>
-            <PhotoGridCollage trashOverlays={[2, 5, 7]} />
-          </View>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.gridContainer}>
+              <PhotoGridCollage trashOverlays={[2, 5, 7]} />
+            </View>
 
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>
-              CLEANUP YOUR{'\n'}CAMERA ROLL
-            </Text>
-            <Text style={styles.subtitle}>
-              Go over your pictures, month by month,{'\n'}and only keep the ones you want.
-            </Text>
-          </View>
+            <View style={styles.textContainer}>
+              <Text style={styles.title}>
+                CLEANUP YOUR{'\n'}CAMERA ROLL
+              </Text>
+              <Text style={styles.subtitle}>
+                Go over your pictures, month by month,{'\n'}and only keep the ones you want.
+              </Text>
+            </View>
 
-          <View style={styles.buttonContainer}>
-            <BigPillButton
-              title="Continue"
-              onPress={handleContinue}
-              variant="white"
-            />
+            <View style={styles.buttonContainer}>
+              <BigPillButton
+                title="Continue"
+                onPress={handleContinue}
+                variant="white"
+              />
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -60,11 +65,16 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.xl,
+  },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.xl,
+    minHeight: 600,
   },
   gridContainer: {
     marginTop: spacing.xl,

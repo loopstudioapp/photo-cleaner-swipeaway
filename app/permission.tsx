@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { logger } from '@/utils/logger';
-import { View, Text, StyleSheet, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, Platform, Linking, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as MediaLibrary from 'expo-media-library';
@@ -65,36 +65,42 @@ export default function PermissionScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topSection}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerContent}>
-            <Text style={styles.welcome}>welcome to</Text>
-            <Text style={styles.title}>SwipeAway!</Text>
-          </View>
-        </SafeAreaView>
-      </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topSection}>
+          <SafeAreaView edges={['top']}>
+            <View style={styles.headerContent}>
+              <Text style={styles.welcome}>welcome to</Text>
+              <Text style={styles.title}>SwipeAway!</Text>
+            </View>
+          </SafeAreaView>
+        </View>
 
-      <View style={styles.midSection}>
-        <Text style={styles.description}>
-          SwipeAway helps you quickly organize your photo library by swiping through photos one at a time.
-        </Text>
-      </View>
+        <View style={styles.midSection}>
+          <Text style={styles.description}>
+            SwipeAway helps you quickly organize your photo library by swiping through photos one at a time.
+          </Text>
+        </View>
 
-      <View style={styles.lowSection}>
-        <Text style={styles.instruction}>
-          To get started, we need access to your photos. Tap below to allow access.
-        </Text>
-        {permissionDenied && (
-          <Text style={styles.deniedMessage}>
-            Photo access was denied. Please enable it in your device Settings to continue.
+        <View style={styles.lowSection}>
+          <Text style={styles.instruction}>
+            To get started, we need access to your photos. Tap below to allow access.
           </Text>
-        )}
-        {isLimitedAccess && (
-          <Text style={styles.limitedMessage}>
-            You selected &quot;Select Photos&quot; (limited access). To delete photos without individual prompts, please go to Settings → Privacy → Photos → SwipeAway and select &quot;All Photos&quot;.
-          </Text>
-        )}
-      </View>
+          {permissionDenied && (
+            <Text style={styles.deniedMessage}>
+              Photo access was denied. Please enable it in your device Settings to continue.
+            </Text>
+          )}
+          {isLimitedAccess && (
+            <Text style={styles.limitedMessage}>
+              You selected &quot;Select Photos&quot; (limited access). To delete photos without individual prompts, please go to Settings → Privacy → Photos → SwipeAway and select &quot;All Photos&quot;.
+            </Text>
+          )}
+        </View>
+      </ScrollView>
 
       <View style={styles.bottomSection}>
         <SafeAreaView edges={['bottom']} style={styles.buttonSafeArea}>
@@ -119,6 +125,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.pinkLow,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   topSection: {
     backgroundColor: colors.pinkHeader,
@@ -154,7 +166,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.pinkLow,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
-    flex: 1,
+    minHeight: 150,
   },
   instruction: {
     fontSize: typography.body.fontSize,

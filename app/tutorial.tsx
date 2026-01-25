@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@/theme/Theme';
@@ -22,37 +22,42 @@ export default function TutorialScreen() {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <View style={styles.cardContainer}>
-            <PhotoCard
-              uri={PLACEHOLDER_IMAGE}
-              width={CARD_WIDTH}
-              height={CARD_HEIGHT}
-            />
-            <View style={styles.stampOverlay}>
-              <StampLabel type="keep" rotation={-12} />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.cardContainer}>
+              <PhotoCard
+                uri={PLACEHOLDER_IMAGE}
+                width={CARD_WIDTH}
+                height={CARD_HEIGHT}
+              />
+              <View style={styles.stampOverlay}>
+                <StampLabel type="keep" rotation={-12} />
+              </View>
+            </View>
+
+            <View style={styles.textContainer}>
+              <Text style={styles.title}>
+                SWIPE THROUGH{'\n'}YOUR PHOTOS…
+              </Text>
+              <Text style={styles.subtitle}>
+                Swipe right to keep, left to delete.{'\n'}
+                It is that simple.
+              </Text>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <BigPillButton
+                title="Continue"
+                onPress={handleContinue}
+                variant="white"
+              />
             </View>
           </View>
-
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>
-              SWIPE THROUGH{'\n'}YOUR PHOTOS…
-            </Text>
-            <Text style={styles.subtitle}>
-              Swipe right to keep, left to delete.{'\n'}
-              It is that simple.
-            </Text>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <BigPillButton
-              title="Continue"
-              onPress={handleContinue}
-              variant="white"
-            />
-          </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -66,11 +71,16 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.xl,
+  },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.xl,
+    minHeight: 600,
   },
   cardContainer: {
     marginTop: spacing.xxl,

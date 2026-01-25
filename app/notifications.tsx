@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { logger } from '@/utils/logger';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@/theme/Theme';
@@ -44,34 +44,40 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topSection}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerContent}>
-            <Text style={styles.welcome}>clean-up</Text>
-            <Text style={styles.title}>reminders</Text>
-          </View>
-        </SafeAreaView>
-      </View>
-
-      <View style={styles.midSection}>
-        <Text style={styles.description}>we&apos;ll let you know:</Text>
-        <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>• when your camera roll is getting full</Text>
-          <Text style={styles.bulletItem}>• weekly reminders to keep things tidy</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topSection}>
+          <SafeAreaView edges={['top']}>
+            <View style={styles.headerContent}>
+              <Text style={styles.welcome}>clean-up</Text>
+              <Text style={styles.title}>reminders</Text>
+            </View>
+          </SafeAreaView>
         </View>
-      </View>
 
-      <View style={styles.lowSection}>
-        <Text style={styles.instruction}>
-          to get started, please{' '}
-          <Text style={styles.bold}>enable notifications.</Text>
-        </Text>
-        {permissionDenied && (
-          <Text style={styles.deniedText}>
-            Notifications denied. You can enable them later in Settings.
+        <View style={styles.midSection}>
+          <Text style={styles.description}>we&apos;ll let you know:</Text>
+          <View style={styles.bulletList}>
+            <Text style={styles.bulletItem}>• when your camera roll is getting full</Text>
+            <Text style={styles.bulletItem}>• weekly reminders to keep things tidy</Text>
+          </View>
+        </View>
+
+        <View style={styles.lowSection}>
+          <Text style={styles.instruction}>
+            to get started, please{' '}
+            <Text style={styles.bold}>enable notifications.</Text>
           </Text>
-        )}
-      </View>
+          {permissionDenied && (
+            <Text style={styles.deniedText}>
+              Notifications denied. You can enable them later in Settings.
+            </Text>
+          )}
+        </View>
+      </ScrollView>
 
       <View style={styles.bottomSection}>
         <SafeAreaView edges={['bottom']} style={styles.buttonSafeArea}>
@@ -98,6 +104,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.pinkLow,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   topSection: {
     backgroundColor: colors.pinkHeader,
@@ -142,7 +154,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.pinkLow,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
-    flex: 1,
+    minHeight: 150,
   },
   instruction: {
     fontSize: typography.body.fontSize,
