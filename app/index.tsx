@@ -12,8 +12,11 @@ export default function IndexScreen() {
     if (isLoading) return;
 
     if (settings.hasCompletedOnboarding && settings.hasGrantedPhotoPermission) {
+      // Returning user - Singular initializes in RootLayoutNav after ATT check
       router.replace('/home');
     } else {
+      // New user - will go through onboarding
+      // Singular will be initialized in intro.tsx AFTER ATT prompt
       router.replace('/intro');
     }
   }, [settings.hasCompletedOnboarding, settings.hasGrantedPhotoPermission, isLoading, router]);

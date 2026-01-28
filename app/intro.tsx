@@ -14,9 +14,14 @@ export default function IntroGridScreen() {
   const maxGridSize = Math.min(width * 0.85, height * 0.35);
 
   const handleContinue = async () => {
-    // Trigger ATT prompt and WAIT for user response before proceeding
+    // STEP 1: Request ATT permission and WAIT for user response
     const status = await requestTrackingPermissionOnce(400);
 
+    // STEP 2: Initialize Singular AFTER ATT response (new users only)
+    // This avoids tracking users who never continue, while still honoring ATT timing.
+    singularService.initialize();
+
+    // STEP 3: Set ATT status as user attribute for analytics
     if (status && Platform.OS === 'ios') {
       singularService.setUserAttribute('att_status', status);
     }
