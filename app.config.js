@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: "SwipeAway",
     slug: "swipeaway-photo-cleaner",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "rork-app",
@@ -16,6 +16,7 @@ module.exports = {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "app.swipeaway-photo-app",
+      buildNumber: "2",
       infoPlist: {
         NSPhotoLibraryUsageDescription: "SwipeAway needs access to your photo library to identify and help you remove duplicate, blurry, and unnecessary photos. Photos are processed on your device and are not uploaded or stored on our servers.",
         NSPhotoLibraryAddUsageDescription: "SwipeAway needs access to your photo library to identify and help you remove duplicate, blurry, and unnecessary photos. Photos are processed on your device and are not uploaded or stored on our servers.",
@@ -36,6 +37,7 @@ module.exports = {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
+      versionCode: 2,
       package: "app.swipeaway_photo_cleaner",
       permissions: [
         "READ_EXTERNAL_STORAGE",
