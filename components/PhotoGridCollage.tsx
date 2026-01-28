@@ -1,16 +1,13 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Trash2 } from 'lucide-react-native';
 import { colors, radii, spacing } from '@/theme/Theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_SIZE = SCREEN_WIDTH * 0.85;
-const TILE_SIZE = (GRID_SIZE - spacing.sm * 2) / 3;
-
 interface PhotoGridCollageProps {
   images?: string[];
   trashOverlays?: number[];
+  maxGridSize?: number;
 }
 
 const PLACEHOLDER_IMAGES = [
@@ -25,17 +22,21 @@ const PLACEHOLDER_IMAGES = [
   'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=400',
 ];
 
-export default function PhotoGridCollage({ 
-  images = PLACEHOLDER_IMAGES, 
-  trashOverlays = [2, 5, 7] 
+export default function PhotoGridCollage({
+  images = PLACEHOLDER_IMAGES,
+  trashOverlays = [2, 5, 7],
+  maxGridSize,
 }: PhotoGridCollageProps) {
   const gridImages = images.length >= 9 ? images.slice(0, 9) : PLACEHOLDER_IMAGES;
+  const { width, height } = useWindowDimensions();
+  const gridSize = Math.min(width * 0.85, maxGridSize ?? height * 0.45);
+  const tileSize = (gridSize - spacing.sm * 2) / 3;
 
   return (
     <View style={styles.container}>
-      <View style={styles.grid}>
+      <View style={[styles.grid, { width: gridSize, height: gridSize }]}>
         {gridImages.map((uri, index) => (
-          <View key={index} style={styles.tileWrapper}>
+          <View key={index} style={[styles.tileWrapper, { width: tileSize, height: tileSize }]}>
             <Image
               source={{ uri }}
               style={styles.tile}
@@ -61,15 +62,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   grid: {
-    width: GRID_SIZE,
-    height: GRID_SIZE,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
   tileWrapper: {
-    width: TILE_SIZE,
-    height: TILE_SIZE,
     borderRadius: radii.md,
     overflow: 'hidden',
     position: 'relative',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@/theme/Theme';
@@ -10,6 +10,8 @@ import { singularService } from '@/services/SingularService';
 
 export default function IntroGridScreen() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const maxGridSize = Math.min(width * 0.85, height * 0.35);
 
   const handleContinue = async () => {
     // Trigger ATT prompt and WAIT for user response before proceeding
@@ -31,7 +33,7 @@ export default function IntroGridScreen() {
         >
           <View style={styles.content}>
             <View style={styles.gridContainer}>
-              <PhotoGridCollage trashOverlays={[2, 5, 7]} />
+              <PhotoGridCollage trashOverlays={[2, 5, 7]} maxGridSize={maxGridSize} />
             </View>
 
             <View style={styles.textContainer}>
@@ -70,18 +72,18 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   content: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingVertical: spacing.xl,
-    minHeight: 600,
   },
   gridContainer: {
     marginTop: spacing.xl,
+    marginBottom: spacing.lg,
   },
   textContainer: {
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
   },
   title: {
     fontSize: typography.titleHeavy.fontSize,
@@ -101,5 +103,6 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingBottom: spacing.xl,
+    marginTop: spacing.md,
   },
 });
